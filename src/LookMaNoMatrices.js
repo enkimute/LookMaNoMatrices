@@ -48,7 +48,7 @@ const render = new miniRender({canvas});
 
 // Grab all html elements we need to render glTF files behind.
 const els    = [...document.querySelectorAll(".glTF")];
-const files  = els.map(x=>x.dataset.scene).filter((x,i,a)=>a.indexOf(x)==i);
+const files  = els.map(x=>x.dataset.scene).filter((x,i,a)=>a.indexOf(x)==i).sort((a,b)=>a<b?-1:1);
 els.forEach( el => el.sceneID = files.indexOf( el.dataset.scene ));
 
 // Load a glTF file and upload to webGL.
@@ -116,3 +116,4 @@ const frame = ()=>{
   requestAnimationFrame(frame);
 }
 frame();
+
