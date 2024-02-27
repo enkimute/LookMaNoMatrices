@@ -112,6 +112,17 @@
     find out ... 
     </P>
     
+    <p>
+    But before we start, a short disclaimer. This project aims to replace matrices without compromise.
+    That, of course, is not how one should approach any engineering problem. As a reference for this
+    project we are using the Khronos glTF viewer. This is a sensible choice, as no doubt others will
+    use this as reference, but it does not attempt to be an optimal implementation. It uses 4x4 matrices
+    in full, and the built-in glsl operators for them for most operations, when experienced graphics
+    programmers know there are still wins there. The point here is not to make the most optimal
+    implementation, especially in light of some of the findings here, the most optimal implementation
+    is most likely a hibrid solution, subject to a future writeup!
+    </p>
+    
     <H2>FPGA : Fast PGA!</H2>
     
     <p>
@@ -403,7 +414,7 @@ motor exp_b( line B ) {
     </CENTER>
     
     <p>
-    Where $\widetilde x$, the reversion operation, changes the sign the bivector and trivector coefficients only.
+    Where $\widetilde x$, the reversion operation, changes the sign of the bivector and trivector coefficients only.
     There is one more inverse that is occasionally needed, which is the inverse of a general bivector $B$.
     Recall that a bivector $B$ only represents a single line iff $B \wedge B = 0$, the so called Plucker condition.
     If a bivector $B$ does not satisfy that requirement, it is no blade, i.e. not the result of meeting two
