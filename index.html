@@ -62,9 +62,9 @@
 
     <SPAN title="model by dogzerx@hotmail.com" style="float:left; display:inline-block; width:180px; height:270px;" id="elephant1" data-animA="0" data-animB="4"></SPAN>
 
-    <p>Since the 2019 SIGGRAPH course [3], Geometric Algebra, and Euclidean PGA in particular, 
+    <p>Since the 2019 SIGGRAPH course [1], Geometric Algebra, and Euclidean PGA in particular, 
        has been gaining traction within the computer graphics and machine learning communities 
-       [1, 2, 4]. Despite its broad applicability, including for higher dimensional geometry 
+       [2, 3, 4]. Despite its broad applicability, including for higher dimensional geometry 
        and physics, its adoption in traditional 3D graphics has been limited, often merely re-branding a 
        dual quaternion as a PGA motor. The ’Look, Ma, No Matrices!’ project aims to broaden PGA’s 
        application by introducing a modern, glTF-compliant, forward-rendering 3D engine that fully 
@@ -116,7 +116,7 @@
     
     <p>
     A full introduction to PGA is outside of the scope of this article, and we will assume the reader
-    is familiar with at least the material in [5, 6, 7]. Instead, we will focus on the choices made for
+    is familiar with at least the material in [1, 5, 6]. Instead, we will focus on the choices made for
     this particular implementation, and specifically work out in detail the basic operators that are
     needed, both for CPU and GPU.    
     </p>
@@ -289,7 +289,7 @@ direction sw_mx( motor a ) {
     $$ \bar M = \cfrac {M} {\lvert M \rvert} $$
     
     is a bit more involved to calculate. In 3D PGA it involves inverting a Study Number that here is isomorphic to a dual number.
-    We've worked out the details for a number of algebras in [8], from which we only need the inverse square root formula :
+    We've worked out the details for a number of algebras in [7], from which we only need the inverse square root formula :
     
     $$\cfrac {1} {\lvert M \rvert} = \cfrac {1} {\sqrt{M \widetilde M}} = \cfrac{1}{\sqrt{a + b\mathbf e_{0123}}} = \cfrac{1}{\sqrt{a}} - \cfrac{b}{2{\sqrt{a}}^3}\mathbf e_{0123} $$
     
@@ -336,7 +336,7 @@ motor sqrt_m( motor R ) {
     
     <H4>Exponential map</H4>
     
-    To complete our PGA toolbox, we adapt, also from [8], efficient implementations of the logarithmic and exponential maps.
+    To complete our PGA toolbox, we adapt, also from [7], efficient implementations of the logarithmic and exponential maps.
     Recall that the logarithm of a PGA motor is a (sum of) scaled lines, and similarly, any scaled line can be exponentiated
     to construct a rotation around it. While the exponential map for general 4x4 matrices is numerically very expensive, for
     our PGA motor manifold efficient closed form solutions are possible. 
