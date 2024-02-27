@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no" />
+  
+  <title>Look, Ma, No Matrices!</title>
+
+  <!-- A nice font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gasoek+One&family=Pathway+Extreme:ital,opsz,wght@0,8..144,100..900;1,8..144,100..900&display=swap" rel="stylesheet">
+  
+  <!-- Latex support -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"
+          onload="renderMathInElement(document.body,{delimiters:[{left: '$$', right: '$$', display: true},{left: '$', right: '$', display: false}]});"></script>  
+          
+  <!-- Highlighting for snippets -->
+  <!--link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css"-->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/base16/marrakesh.min.css">
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/glsl.min.js"></script>
+
+  <!-- Minimal local styling -->
+  <style>
+    body      { font-family: "Pathway Extreme", Arial, sans-serif; text-align:justify; counter-reset: section; background : linear-gradient(0deg, rgb(0 0 0) ,rgb(66 22 0) ) fixed;}
+    b         { color : white }
+    #render   { position:absolute; width:100%; height:100%; top:0; left:0; pointer-events:none; z-index:100; }
+    .main     { color:#BBB; position:relative; margin:auto; max-width: min(100%, 1024px); overflow:hidden }
+    h1, h2, h3, h4 { color: #EEE; }
+    h2::before { counter-increment: section;  content: counter(section) ". "; }    
+    h2         {  counter-reset: subsection; }
+    h3::before { counter-increment: subsection;  content: counter(section) "." counter(subsection) ". "; }    
+    h3         { counter-reset : subsubsection; }
+    h4::before { counter-increment: subsubsection;  content: counter(section) "." counter(subsection) "." counter(subsubsection) ". "; }    
+    table { border-collapse:collapse; border:1px solid rgba(255,255,255,0.8); background : rgba(0,0,0,0.3);  }
+    td    { padding:5px; width: 6.25%; border: 1px solid rgba(255,255,255,0.8); text-align:center }
+    td.b  { border-right:3px solid white }
+    th    { text-align:center }
+    a     { color:#CCC; }
+    a:visited { color:#AAF; }    
+    
+  </style>
+  <!-- Our external dependencies. -->
+</head>
+<body>
+  <!-- HTML -->
+  <canvas id="render"></canvas>
+
+  <progress id="file" max="100" value="0" STYLE="position:fixed; top:5px; width:calc(100vw - 20px)"></progress>
+
+  <!-- CONTENT -->
+  <DIV class="main">
+    <CENTER>
+    <H1>Look, Ma, No Matrices!</H1>
+    <div>A forward renderer without matrices.</div>
+    <B>Steven De Keninck</B><BR><BR>
+    <big>Putting PGA ($\mathbb R_{3,0,1}$) to the test!</big>
+    </CENTER><BR><BR>
+
+    <SPAN title="model by dogzerx@hotmail.com" style="float:left; display:inline-block; width:180px; height:270px;" id="elephant1" data-animA="0" data-animB="4"></SPAN>
+
+    <p>Since the 2019 SIGGRAPH course [3], Geometric Algebra, and Euclidean PGA in particular, 
+       has been gaining traction within the computer graphics and machine learning communities 
+       [1, 2, 4]. Despite its broad applicability, including for higher dimensional geometry 
+       and physics, its adoption in traditional 3D graphics has been limited, often merely re-branding a 
+       dual quaternion as a PGA motor. The ’Look, Ma, No Matrices!’ project aims to broaden PGA’s 
+       application by introducing a modern, glTF-compliant, forward-rendering 3D engine that fully 
+       integrates the PGA algebra.
+    </p>
+    
+    <p>In this write up, we will go over this project, highlighting the solutions and techniques that
+       are required when moving to a PGA implementation. It was at times tempting to start from the existing
+       techniques and attempt an 'algebra-level' translation. This however often leads to
+       unsatisfactory solutions and in order for PGA to truly reach its potential a more fundamental
+       revisit is often needed. Algebra without geometry, indeed, is blind.
+    </p>
+
+    
+    <H2>Introduction.</H2>
+    
+    <P>
+    Matrices are everywhere in computer graphics. In fact, there was a time when 4x4 matrices were
+    both baked into the GPU and a mandatory part of all graphics API's. This project would then
+    simply not have been possible. Today however, pushed in no small part by the advancements in AI,
+    GPU's are highly programmable scalar processors, no longer tied into the long gone fixed function
+    pipeline. Yet, 4x4 matrices are still omnipresent. And why should they not be ? They can represent
+    all linear transformations, and the typical forward graphics pipeline indeed involves both
+    rigid and projective transformations. Seems like a good fit.
+    </P>
+    
+    <P>
+    Quaternions are also everywhere in computer graphics. Turns out, matrices have less than ideal
+    interpolation properties, and modern formats like Khronos' glTF use quaternions for all their
+    rotation needs. Fantastic for animations, and generally considered worth the cost of the
+    unavoidable conversions to and from matrices.
+    </P>
+    
+    <P>
+    Out in the real world, however, the vast majority of matrices in your typical 3D engine setup
+    are going to be orthogonal matrices, encoding just rotations and translations. And this is where
+    the motor manifold of PGA comes in. At a lower computational and memory cost, PGA motors encode
+    the full set of Euclidean motions, additionally offering conversion free inclusion of quaternions
+    and dual quaternions.     
+    </P>
+    
+    <P>
+    This of course raises the question - can we replace all matrices in a typical forward renderer by
+    their PGA equivalents ? Is a true matrix free setup possible or even desirable ? Only one way to
+    find out ... 
+    </P>
+    
+    <H2>FPGA : Fast PGA!</H2>
+    
+    <p>
+    A full introduction to PGA is outside of the scope of this article, and we will assume the reader
+    is familiar with at least the material in [5, 6, 7]. Instead, we will focus on the choices made for
+    this particular implementation, and specifically work out in detail the basic operators that are
+    needed, both for CPU and GPU.    
+    </p>
+
+    <H3>Basics and Basis</H3>
+    
+    <p>
+    The PGA algebra is generated by four basis vectors $\mathbf e_0$ to $\mathbf e_3$. The
+    $\mathbf e_1, \mathbf e_2, \mathbf e_3$ vectors map to the $x=0, y=0, z=0$ planes respectively
+    while the special degenerate $\mathbf e_0$ vector represents the plane at infinity. These generators
+    are then combined to form bivectors, trivectors and a single quadvector that together represent
+    all of the PGA elements. Our specific choice for basis and memory layout was selected to minimize
+    convertions when handling typical graphics data. All of the elements of PGA are intricately 
+    connected, an overview of our choices and how they map to transformations and geometric elements
+    is in the following table:
+    </p>
+    <BR>
+    <CENTER>    
+    <TABLE>
+    <TR><TD>e1 <TD>e2 <TD>e3 <TD class="b">e0<TD>1 <TD> e23 <TD> e31 <TD> e12 <TD> e01 <TD> e02 <TD> e03 <TD class="b"> e0123 <TD> e032 <TD> e013 <TD> e021 <TD> e123 </TR>
+    <TR STYLE="color:#FA8"><TD>+1 <TD>+1 <TD>+1 <TD class="b">0<TD>+1 <TD> -1 <TD> -1 <TD> -1 <TD> 0 <TD> 0 <TD> 0 <TD class="b"> 0 <TD> 0 <TD> 0 <TD> 0 <TD> -1 </TR>
+    <TR><TD class="b" colspan=4 rowspan=2>plane-reflection<TD class="b" colspan=8>Motor / Dual Quaternion / Lie Group<TD colspan=4 rowspan=2>point-reflection</TR>
+    <TR><TD colspan=4>Quaternion<TD colspan=4 class="b"></TR>
+    <TR><TD rowspan=2 class="b" colspan=4>plane<BR>$a\mathbf e_1 + b\mathbf e_2 + c\mathbf e_3 + d\mathbf e_0 = 0$<TD rowspan=2><TD colspan=3>Line through orig.<TD colspan=3>&infin; line<TD rowspan=2 class="b"><TD colspan=4 rowspan=2>point<BR>$(x\mathbf e_1 + y\mathbf e_2 + z\mathbf e_3 + w\mathbf e_0)^*$</TR>
+    <TR><TD colspan=6>Line / Lie Algebra</TR>
+    <TR><TD class="b" colspan=4>vector<TD>S<TD colspan=6>bivector<TD class="b">PSS<TD colspan=4>trivector</TR>
+    </TABLE>
+    </CENTER>
+    <BR>
+    <p>
+    These choices result in the following simple shader structures, where we opted to stay within the built
+    in types to retain addition, subtraction and scalar multiplication. (glsl does not support operator overloading for custom types). 
+    </p>
+    <PRE><CODE class="language-glsl">#define motor     mat2x4  // [ [s, e23, e31, e12], [e01, e02, e03, e0123] ] 
+#define line      mat2x3  // [ [e23, e31, e12], [e01, e02, e03] ]
+#define point     vec3    // [ e032, e013, e021 ] implied 1 e123
+#define direction vec3    // [ e032, e013, e021 ] implied 0 e123</CODE></PRE>
+    
+    <H3>Get your Geometric Products!</H3>
+    
+    <p>
+    With our data structures defined, we can focus our attention on implementing the (subset) of PGA products
+    we will need. Special atention is given to the composition and sandwich operators - the numerical efficiency
+    of matrix-vector multiplication is well known, and as we will discover, some creativity is needed to get
+    PGA up to par.
+    </p>
+    
+    <H4>Composition of transformations.</H4>
+    
+    The 8-float motors of PGA, isomorphic to the dual quaternions, naturally come with an efficient composition
+    operator in the form of the geometric product. Recall that the product of two 4x4 matrices requires 64 
+    multiplications and 48 additions. For two general PGA motors, their composition clocks in at just 48
+    multiplications and 40 additions. Working the product out at coefficient level produces the following
+    implementation on the CPU:
+    
+    <PRE><CODE class="language-javascript">// 48 mul, 40 add
+export const gp_mm = (a,b,res=new baseType(8)) => {
+  const a0=a[0],a1=a[1],a2=a[2],a3=a[3],a4=a[4],a5=a[5],a6=a[6],a7=a[7],
+        b0=b[0],b1=b[1],b2=b[2],b3=b[3],b4=b[4],b5=b[5],b6=b[6],b7=b[7];
+  res[0] = a0*b0-a1*b1-a2*b2-a3*b3;
+  res[1] = a0*b1+a1*b0+a3*b2-a2*b3;
+  res[2] = a0*b2+a1*b3+a2*b0-a3*b1;
+  res[3] = a0*b3+a2*b1+a3*b0-a1*b2;
+  res[4] = a0*b4+a3*b5+a4*b0+a6*b2-a1*b7-a2*b6-a5*b3-a7*b1;
+  res[5] = a0*b5+a1*b6+a4*b3+a5*b0-a2*b7-a3*b4-a6*b1-a7*b2;
+  res[6] = a0*b6+a2*b4+a5*b1+a6*b0-a1*b5-a3*b7-a4*b2-a7*b3;
+  res[7] = a0*b7+a1*b4+a2*b5+a3*b6+a4*b1+a5*b2+a6*b3+a7*b0;
+  return res;
+}</CODE></PRE>
+
+    This block of code, with some reshuffling and pattern matching can be written in glsl using dot and
+    cross products as:
+    
+    <PRE><CODE class="language-glsl">// 48 mul, 40 add    
+motor gp_mm( motor a, motor b ) {
+  return motor(
+         a[0].x*b[0].x   - dot(a[0].yzw, b[0].yzw), 
+         a[0].x*b[0].yzw + b[0].x*a[0].yzw + cross(b[0].yzw, a[0].yzw),
+         a[0].x*b[1].xyz + b[0].x*a[1].xyz + cross(b[0].yzw, a[1].xyz) + cross(b[1].xyz, a[0].yzw) - b[1].w*a[0].yzw - a[1].w*b[0].yzw, 
+         a[0].x*b[1].w + b[0].x*a[1].w + dot(a[0].yzw, b[1].xyz) + dot(a[1].xyz, b[0].yzw));
+}</CODE></PRE>
+
+    While already efficient, the above code block handles general motors and there are many scenarios
+    where we deal with e.g. pure translations or rotations around the origin. In those scenarios many
+    of the motor coefficients will be zero, and reworking the above code block to incorporate that
+    is an easy task. For example, for the composition of two rotations around the origin we find we
+    need only 16 multiplications and 12 additions:
+    
+    <PRE><CODE class="language-glsl">// 16 mul, 12 add
+motor gp_rr( motor a, motor b ) {
+  return motor( a[0].x*b[0] + vec4( -dot(a[0].yzw, b[0].yzw), b[0].x*a[0].yzw + cross(b[0].yzw,a[0].yzw) ), vec4(0.) ); 
+}</CODE></PRE>
+    
+    Our implementation provides these optimised versions for any combination of translation, rotation around the origin
+    and general motor. 
+    
+    <CENTER>
+    <DIV STYLE="display:inline-block;"><TABLE STYLE="max-width:600px;">
+    <TR><TH>Operation<TH>Multiplications<TH>Additions
+    <TR><TD>gp_mm<TD>48<TD>40
+    <TR><TD>gp_rr<TD>16<TD>12
+    <TR><TD>gp_tt<TD>0<TD>3
+    <TR><TD>gp_rt / gp_tr<TD>12<TD>8
+    <TR><TD>gp_rm / gp_mr<TD>32<TD>24
+    <TR><TD>gp_tm / gp_mt<TD>12<TD>12
+    </TABLE></DIV>
+    <SPAN title="model by dogzerx@hotmail.com" style="display:inline-block; width:140px; height:200px;" id="elephant2"  data-animA="0" data-animB="1"></SPAN>
+    </CENTER>
+    
+    <H4>Transforming points</H4>
+    
+    For the transformation of a point $p$ with a motor $M$, done in PGA with the sandwich product, the situation is more complex.
+    
+    $$ p' = M p \widetilde M $$
+    
+    Working out these two geometric products naively results in a whopping 33 multiplications and 29 additions, or more than twice
+    the 16 multiplications and 12 additions required for the matrix-vector equivalent. The reason for this is that this naive
+    expansion does not take into account the fact that PGA motors satisfy $M\widetilde M = 1$. It is however not to difficult to
+    incorporate this into our sandwich product. To do so we start instead from the expression 
+    
+    $$ p' = M p \widetilde M + p \cdot (1 - M\widetilde M)$$
+    
+    Where the second term evaluates to zero for a normalized motor M. Evaluating this new expression at coefficient level allows
+    us to reduce the operations needed to 21 multiplications and 18 additions (which for the isomorphic dual quaternions is the best
+    known solution) :
+    
+    <PRE><CODE CLASS="language-glsl">// 21 mul, 18 add
+point sw_mp( motor a, point b ) {
+  direction t = cross(b, a[0].yzw)  - a[1].xyz;
+  return  (a[0].x * t + cross(t, a[0].yzw) - a[0].yzw * a[1].w) * 2. + b;
+}</CODE></PRE>
+    
+    <H4>Transforming directions</H4>
+    
+    For directions, with an implied $\mathbf e_{123}$ coefficient of $0$, we can do a bit better still. Applying the same normalisation
+    trick we find a solution that requires only 18 multiplications and 12 additions.
+    
+    <PRE><CODE CLASS="language-glsl">// 18 mul, 12 add
+direction sw_md( motor a, direction b ) {
+  direction t = cross(b, a[0].yzw);
+  return  (a[0].x * t + cross(t, a[0].yzw)) * 2. + b;
+}</CODE></PRE>
+    
+    Anticipating our needs when dealing with tangent spaces, we also work out the sandwich product on the basis directions. (as opposed
+    to the general direction above). In that scenario, the computational cost can be reduced even further. In fact, if we produce an
+    output normalized to $0.5$ instead of $1$ we can reduce the computational cost for the transformation of e.g. the x axis to an
+    amazing 6 multiplications and 4 additions - about the cost of a default cross product: 
+    
+    <PRE><CODE CLASS="language-glsl">// 6 mul, 4 add
+direction sw_mx( motor a ) {
+  return direction(
+    0.5 - a[0].w*a[0].w - a[0].z*a[0].z, 
+    a[0].z*a[0].y - a[0].x*a[0].w, 
+    a[0].w*a[0].y + a[0].x*a[0].z
+  );
+}</CODE></PRE>
+
+    This is an important observation, and as you will see will allow us to challenge the common belief that matrices are unconditionally
+    the fastest choice ... 
+    
+    <H4>Normalisation</H4>
+    
+    The squared (pseudo)norm of a PGA motor $M$ is given by 
+    
+    $$ \lvert M \rvert^2 = M \widetilde M = a + b\mathbf e_{0123}$$
+    
+    For a normalized motor, $\lvert M \rvert = 1$, but in general the result of this expression is $a + b\mathbf e_{0123}$, a Study Number (a multivector whose
+    non-scalar part squares to a scalar). As a consequence, the normalized motor $\bar M$,
+    
+    $$ \bar M = \cfrac {M} {\lvert M \rvert} $$
+    
+    is a bit more involved to calculate. In 3D PGA it involves inverting a Study Number that here is isomorphic to a dual number.
+    We've worked out the details for a number of algebras in [8], from which we only need the inverse square root formula :
+    
+    $$\cfrac {1} {\lvert M \rvert} = \cfrac {1} {\sqrt{M \widetilde M}} = \cfrac{1}{\sqrt{a + b\mathbf e_{0123}}} = \cfrac{1}{\sqrt{a}} - \cfrac{b}{2{\sqrt{a}}^3}\mathbf e_{0123} $$
+    
+    This leads to the following efficient implementation for 3DPGA: 
+    
+    <PRE><CODE CLASS="language-glsl">// 21 mul, 5 add
+motor normalize_m( motor a ) {
+  float s = 1. / length( a[0] );
+  float d = (a[1].w * a[0].x - dot( a[1].xyz, a[0].yzw ))*s*s;
+  return motor(a[0]*s, a[1]*s + vec4(a[0].yzw*(s*d),-a[0].x*s*d));
+}</CODE></PRE>
+     
+    Note that this procedure should be compared not to vector normalisation, but instead to Gram-Schmidt orthogonalisation, as
+    the resulting motor is guaranteed to be an orthonormal transformation.
+    
+    As before, when we are dealing with a pure translation or rotation, far more efficient versions of the normalisation
+    procedure are available.
+    
+    <H4>Square Roots</H4> 
+    
+    The square root plays an important role in PGA, as it is the key to constructing transformations between elements.
+    Given any pair of points/lines/planes $a,b$, there exist a rigid transformation that moves $a$ onto $b$. Such a rigid
+    transformation always has a motor form, and this motor is always given by the same simple expression : 
+    
+    $$ M = \sqrt{ \cfrac {b} {a} } $$
+    
+    Combine this with the fact that for any normalized blade $a$ its inverse is $\pm a$, and we can rewrite this as
+    
+    $$ \pm M^2 = ba $$
+    
+    Or, in other words, the geometric product $ba$ of any two points, two lines or two planes produces a motor that represents
+    twice the transformation from $a$ to $b$. The square root comes in to halve this result and indeed find the motor that moves
+    $a$ exactly onto $b$. Here to, geometric algebra provides a single elegant method that universally applies :
+    
+    $$ \sqrt M = \overline{1 + M} $$
+    
+    Where the overline denotes the study-normalisation procedure from our previous block. Hence the computational cost of a
+    square root is exactly that of the normalisation procedure with one extra addition.
+
+    <PRE><CODE CLASS="language-glsl">// 21 mul, 6 add
+motor sqrt_m( motor R ) {
+  return normalize_m( motor( R[0].x + 1., R[0].yzw, R[1] ) ); 
+}</CODE></PRE>
+    
+    <H4>Exponential map</H4>
+    
+    To complete our PGA toolbox, we adapt, also from [8], efficient implementations of the logarithmic and exponential maps.
+    Recall that the logarithm of a PGA motor is a (sum of) scaled lines, and similarly, any scaled line can be exponentiated
+    to construct a rotation around it. While the exponential map for general 4x4 matrices is numerically very expensive, for
+    our PGA motor manifold efficient closed form solutions are possible. 
+    
+    <PRE><CODE CLASS="language-glsl">// 14 muls 5 add 1 div 1 acos 1 sqrt
+line log_m( motor M ) { 
+  if (M[0].x == 1.) return line( vec3(0.), vec3(M[1].xyz) );
+  float a = 1./(1. - M[0].x*M[0].x), b = acos(M[0].x) * sqrt(a), c = a*M[1].w*(1. - M[0].x*b);
+  return line( b*M[0].yzw, b*M[1].xyz + c*M[0].wzy);
+}</CODE></PRE>
+
+    <PRE><CODE CLASS="language-glsl">// 17 muls 8 add 2 div 1 sqrt 1 cos 1 sin
+motor exp_b( line B ) {
+  float l = dot(B[0],B[0]);
+  if (l==0.) return motor( vec4(1., 0., 0., 0.), vec4(B[1], 0.) );
+  float a = sqrt(l), m = dot(B[0].xyz, B[1]), c = cos(a), s = sin(a)/a, t = m/l*(c-s);
+  return motor( c, s*B[0], s*B[1] + t*B[0].zyx, m*s );
+}</CODE></PRE>
+ 
+    <H4>Inverses</H4>
+    
+    <p>
+    If there's one place where Geometric Algebra sets itself clearly apart from our standard vector and matrix
+    algebra aproach, it is the existense of inverses for (multi) vectors. Not only do these inverses exist,
+    but for the normalized objects we are working with in our context, they are very efficient to calculate.
+    </p>
+    
+    <CENTER>
+    <TABLE STYLE="max-width:400px">
+    <TR><TH>Element $x$<TH>Inverse $x^{-1}$
+    <TR><TD>Plane<TD STYLE="text-align:left; padding-left:80px">$x^{-1} = x$
+    <TR><TD>Line <TD STYLE="text-align:left; padding-left:80px">$x^{-1} = -x$
+    <TR><TD>Point<TD STYLE="text-align:left; padding-left:80px">$x^{-1} = -x$
+    <TR><TD>Motor<TD STYLE="text-align:left; padding-left:80px">$x^{-1} = \widetilde x$
+    </TABLE>
+    </CENTER>
+    
+    <p>
+    Where $\widetilde x$, the reversion operation, negates the bivector and trivector coefficients only.
+    There is one more inverse that is occasionally needed, which is the inverse of a general bivector $B$.
+    Recall that a bivector $B$ only represents a single line iff $B^B = 0$, the so called Plucker condition.
+    If a bivector $B$ does not satisfy that requirement, it is non blade, i.e. not the result of meeting two
+    planes or joining two points. For such an element the inverse is slightly more complicated.
+    </p>
+    
+    <p>
+    To find this inverse, we start by multiplying with the reverse bivector from the right.
+    $$ \cfrac {1} {B} = \cfrac {\widetilde B}{B \widetilde B}$$
+    As before, the squared norm of $\lvert B \rvert^2 =  B \widetilde B = a + b \mathbf e_{0123}$, is a study number, isomorphic to
+    the dual numbers. This allows us to use the definition of a dual number inverse.
+    $$ \cfrac {1} {(a + b \mathbf e_{0123})} = \cfrac {1} {a} - \cfrac {b} {a^2} \mathbf e_{0123}$$ 
+    Multiplying this last expression with $\widetilde B$ produces the inverse we are looking for.
+    </p>
+    
+    <H4>Motor Factorisation</H4>
+    
+    <p>
+    Just as the process of factorizing matrices can be very insightfull, so is the factorization of PGA 
+    motors. Two particular factorisations will be useful to us, and we will add them as the last tools
+    to our box. The first of those is called the <i>Euclidean Factorisation</i>, and it decomposes a motor
+    into a rotation around the origin followed by a translation.
+    $$ M = T_e R_e $$
+    This factorisation is particularly easy to calculate, as the Euclidean rotor $R_e$ is simply the Euclidean
+    part of our motor - the first four floats - isomorphic to a regular quaternion. If it is needed the
+    translation $T_e$ can be computed as $T_e = M \widetilde R_e$
+    </p>
+    
+    <p>
+    The second factorisation of interest is the so called <I>Invariant factorisation</I>. It decomposes a
+    motor M into a commuting translation and rotation, which is always possible and generally known in 3D
+    as the Mozzi-Chasles theorem. You may have heard of it as every rigid body transformation can be
+    decomposed into a rotation around a line preceded or followed by a translation along the same line.
+    $$ M = TR = RT$$
+    In 3D PGA, the invariant factorisation is also easy to calculate, with the commuting translation given by
+    $$ T = 1 + \cfrac {\langle M \rangle_4} {\langle M \rangle_2}$$
+    Where the angle brackets denote the grade extraction, and the general bivector inverse from above comes 
+    in handy. The matching rotation can now be constructed as $R = M\widetilde T = \widetilde TM$.
+    </p>
+    
+    <p>
+    We will in particular use the Euclidean factorisation when composing the transformation of the tangent
+    frame with that of the object to world motor, as such a frame is invariant to translations and the composition
+    of rotations around the origin is more efficient.
+    </p>
+    
+    
+    <H3>Escaping the matrix</H3>
+    
+    The prevalence of matrices in computer graphics means that interacting with existing content inevitably will
+    confront you with matrices. The Khronos glTF project from which we have started uses matrices throughout, for
+    transformations, binding poses for skinning etc. Our commitment to a matrix-free environment implies we will
+    have to convert these matrices to their PGA equivalents at load time.
+    
+    <H4>Converting matrices to motors.</H4>
+    
+    To convert a 4x4 orthonormal matrix to a motor, we happily employ the isomorphism to quaternions and upgrade
+    an industry standard solution to handle the entire PGA manifold. 
+    
+    <PRE><CODE CLASS="language-javascript">export const fromMatrix3 = M => {
+  // Shorthand.
+  var [m00,m01,m02,m10,m11,m12,m20,m21,m22] = M;
+  
+  // Quick scale check - we really should do SVD here.
+  const scale = [hypot(m00,m01,m02),hypot(m10,m11,m12),hypot(m20,m21,m22)];
+  if (abs(scale[0]-1)>0.0001 || abs(scale[1]-1)>0.0001 || abs(scale[2]-1)>0.0001) {
+    const i = scale.map(s=>1/s);
+    m00 *= i[0]; m01 *= i[0]; m02 *= i[0];
+    m10 *= i[1]; m11 *= i[1]; m12 *= i[1];
+    m20 *= i[2]; m21 *= i[2]; m22 *= i[2];
+    if (abs(scale[0]/scale[1]-1)>0.0001 || abs(scale[1]/scale[2]-1)>0.0001) console.warn("non uniformly scaled matrix !", scale);
+  }  
+  
+  // Return a pure rotation (in motor format)
+  return normalize(   m00 + m11 + m22 > 0 ? [m00 + m11 + m22 + 1.0, m21 - m12, m02 - m20, m10 - m01, 0,0,0,0]:
+                   m00 > m11 && m00 > m22 ? [m21 - m12, 1.0 + m00 - m11 - m22, m01 + m10, m02 + m20, 0,0,0,0]:
+                                m11 > m22 ? [m02 - m20, m01 + m10, 1.0 + m11 - m00 - m22, m12 + m21, 0,0,0,0]:
+                                            [m10 - m01, m02 + m20, m12 + m21, 1.0 + m22 - m00 - m11, 0,0,0,0]);
+}
+</CODE></PRE>
+    <PRE><CODE CLASS="language-javascript">export const fromMatrix = M => {
+  // Shorthand.
+  var [m00,m01,m02,m03,m10,m11,m12,m13,m20,m21,m22,m23,m30,m31,m32,m33] = M;
+  
+  // Return rotor as translation * rotation
+  return gp_mm( [1,0,0,0,-0.5*m30,-0.5*m31,-0.5*m32,0], fromMatrix3([m00,m01,m02,m10,m11,m12,m20,m21,m22]) );
+}
+</CODE></PRE>
+
+    These conversions are run on all of the matrices in our imports, at load time. 
+    
+    <H4>Handling uniform scaling.</H4>
+    
+    PGA motors, in contrast with 4x4 matrices, do not incorporate scaling, as it clearly is not a rigid body
+    transformation. Scaling, and specifically uniform scaling is however commonly used in scene graphs to 
+    scale resources coming from potentially different sources and authored in different absolute sizes.
+    
+    While less than $0.5$% of the almost 400 random glTF files tested had any animation on the scale, quite
+    a large number of them has some fixed uniform scale applied.
+    
+    The advantage of uniform scaling is that it is invariant to both rotations and translations, and as
+    a result it requires only one floating point number per node, where each elements total scale is simply
+    the product of its own scale and that of its parent.
+    
+    Our implementations tracks scaling in this manner, applying the total scale to the vertices either at
+    load time or as first step in the vertex shader, and applying the parent scale to the translations,
+    again at load time and when updating animations.
+    
+    The impact of incorporating uniform scaling like this is absolutely minimal, enabling us to cover almost
+    all existing content without abandoning the PGA motor efficiency.
+    
+    <H4>Handling non-uniform scaling.</H4>
+    
+    For non uniform scaling the situation is trickier - in the scenario where non-uniform scaling is used,
+    ultimately a fall-back to 4x4 matrices is unavoidable. A non-uniform scale is not invariant to rotations,
+    and tracking these scales as we did in the uniform case is tedious. However, again from our sample of glTF
+    files, we could only find non-uniform scale applied on leaf nodes. (and given the problems caused by non-uniform
+    scaling, this is not unexpected). For such a scenario, animation keys are not impacted and we simply apply
+    the non-uniform scale seperately before the rest of the transformations.
+    
+    <H2>Forward Rendering.</H2>
+    
+    <p>
+    Armed with our fully stocked PGA toolbox, we can now tackle the actual rendering task. Guided by the
+    reference implementation provided by Khronos, let us revisit those places where matrices are the defacto
+    solution.
+    </p>
+    
+    <p>
+    The general idea of a forward renderer, is to transform all mesh geometry, and determining for each
+    triangle which pixels it covers. This is to be contrasted with a ray tracing approach where one starts
+    from a ray throuh a pixel and determines which triangles it hits. In a typical forward rendering setup
+    the transformation of the mesh from its specification in object space to its position on the screen is
+    typically handled by a set of matrices called the model, view and projection matrices.
+    </p>
+    
+    <H3>Model - View - Projection.</H3>
+    <p>
+    Our conversion at load time of all matrices and transformations into PGA motors, is already a substantial
+    optimization on the amount of computation needed to update the scene graph hierarchy. For complex setups
+    many composition operators are required, and the gain of switching to motors is obvious.
+    </p>
+    <p>
+    However, while the CPU is concerned with producing updated transformations, the GPU has the task of applying
+    these transformations to the vertices, normals and tangents that make up our mesh, and as we've seen, the
+    computational complexity involved appears to make our motors a disadvantage.
+    </p>
+    <SPAN title="model by dogzerx@hotmail.com" style="float:right; display:inline-block; width:140px; height:150px;" id="elephant3" data-animA="0" data-animB="2"></SPAN>
+    <p>
+    As we will soon discover, the situation is more subtle, and at this point we push through, replacing the 
+    model and view matrices with motors, and using the above defined sandwich products to transform the incoming
+    vertex attributes
+    </p>
+    
+    <PRE><CODE class="language-glsl">vec3 worldPosition = sw_mp( toWorld, attrib_position );
+vec3 worldNormal   = sw_md( toWorld, attrib_normal );      
+vec4 worldTangent  = vec4(sw_md( toWorld, attrib_tangent.xyz ), attrib_tangent.w);</CODE></PRE>
+    
+    <H3>Tangent Space Normalmapping.</H3>
+    
+    <p>
+    For a tangent space normalmapped mesh, the vertex shader needs to transform the position, the normal, and
+    the tangent vector. So it seems unavoidable that our choice for PGA means we are incurring the higher
+    transformation cost threefold. However, the normal and tangent and bitangent vector together form an
+    orthonormal frame. In PGA, any orthonormal frame is related to the canonical basis frame through a $k$-reflection.
+    When $k$ is even, these are just the rotation only motors we encountered before (iso to the quaternions), and
+    when $k$ is odd, this k-reflection instead represents a similar rotation followed by one extra reflection.
+    </p>
+    
+    <p>
+    This implies that we can remove both the normal and the tangent vectors from our vertex description,
+    replacing them instead by a tangentRotor, that represents the rotation from the basis frame to the
+    desired tangent frame. Such a tangentRotor $R$ in fact double-covers all possible tangent frames in the
+    sense that both $R$ and $-R$ produce the same transformation. We can use this double covering to disambiguate
+    even and odd k-reflections, simply by making sure the sign of the scalar coefficient of $R$ matches the
+    classical handedness flag. Note that in doing so, we piggy-back on the IEE754 floating point specification,
+    that is we depend on the signed representation of zero. In the vertexshader we can then unambigously extract
+    the original sign using <PRE><CODE CLASS="language-glsl">float handedness = sign(1/x)</CODE></PRE>
+    </p>
+    
+    <p>
+    Combining all this, we conclude that we can reduce our vertex descriptor for the most common tangent
+    space normalmapping setup from 12 floats (3 position, 3 normal, 4 tangent, 2 uv) down to 9 (3 position,
+    4 tangentRotor, 2 uv). That is a substantial save, which is implemented at loadtime, converting loaded
+    normal and tangent vectors with:
+    </p>
+    <PRE><CODE "language-javascript">// Normalize, Orthogonalize
+normal  = normalize( normal );
+tangent = normalize( sub(tangent, mul(normal, dot(normal,tangent) ) ) );
+// Calculate the bitangent.
+let bitangent = normalize(cross(normal, tangent));
+// Now setup the matrix explicitely.
+let mat = [...tangent, ...bitangent, ...normal];
+// Convert to motor and store.
+let motor = fromMatrix3( mat );
+// Use the double cover to encode the handedness.
+// in GA language, this means we are using half of the double cover to distinguish even and odd versors.
+if (Math.sign(motor[0])!=tangents[i*4+3]) motor = motor.map(x=>-x);</CODE></PRE>
+
+    <p>
+    But there is more good news. Recall that using 4x4 matrices, the transformation of position, normal and
+    tangent includes 3 matrix vector products, totalling 48 multiplications and 36 additions. In the PGA
+    version, we can however transform the entire tangent frame in one go, for a cost of just 16 multiplications
+    and 12 additions. After which we can in fact extract the worldspace normal and tangent directly with just
+    9 multiplications and 8 additions using :
+    </p>
+    
+    <PRE><CODE class="language-glsl">// 9 muls, 8 adds
+void extractNormalTangent( motor a, out direction normal, out direction tangent ) {
+  float yw = a[0].y * a[0].w;
+  float xz = a[0].x * a[0].z;
+  float zz = a[0].z * a[0].z;
+
+  normal  = direction( yw - xz, a[0].z*a[0].w + a[0].y*a[0].x, 0.5 - zz - a[0].y*a[0].y );
+  tangent = direction( 0.5 - zz - a[0].w*a[0].w, a[0].z*a[0].y - a[0].x*a[0].w, yw + xz );
+}</CODE></PRE>
+
+    <p>Add to that the 21 multiplications and 18 additions needed to transform the vertex position, and another
+    multiplication to extract the handedness, and we come to the remarkable conclusion that in order to transform 
+    a vertex with full tangent frame to world space, our PGA approach needs only (16 + 9 + 21 + 1 = 47) multiplications
+    and (12 + 8 + 18 = 38) additions. That is nearly identical to the 48 multiplications and 36 additions that would
+    be required if we use 4x4 matrices and normal and tangent vectors instead. 
+    </p>
+    <center><SPAN title="model by dogzerx@hotmail.com" style="display:inline-block; width:200px; height:250px;" id="elephant5"  data-animA="4" data-animB="3"></SPAN></center>
+    
+    <center><b>PGA motors can be just as fast as 4x4 matrices to transform your mesh vertices !!!</b></center>
+    
+    <BR>
+    <CENTER>
+    <TABLE style="max-width:900px">
+    <TR><TH>method<TH>floats/vertex<TH>floats/transform<TH>multiplications<TH>additions
+    <TR><TD>Matrix + normal + tangent<TD>12<TD>32<TD>48<TD>36
+    <TR><TD>Motor + tangentRotor<TD>9 <B>-25%</B><TD>8 <B>-75%</B><TD>47<TD>38
+    </TABLE>
+    </CENTER>	
+    
+    <p>
+    The resulting code block in the vertexshader now becomes
+    </p>
+    
+    <PRE><CODE CLASS="language-glsl">// Now transform our vertex using the motor from object to worldspace.
+worldPosition = sw_mp(toWorld, attrib_position);
+
+// Concatenate the world motor and the tangent frame.
+motor tangentRotor = gp_rr( toWorld, motor(attrib_tangentRotor,vec4(0.)) );
+
+// Next, extract world normal and tangent from the tangentFrame rotor.
+extractNormalTangent(tangentRotor, worldNormal, worldTangent.xyz);
+worldTangent.w = sign(1.0 / attrib_tangentRotor.x); // trick to disambiguate negative zero!</CODE></PRE>
+
+    <H3>Motor Skinning.</H3>
+    
+    <p>
+    With PGA motors isomorphic to the dual quaternions, skinning is an obvious candidate for our PGA approach.
+    After converting inverse bind matrices to their motor equivalent, the skinning code for our motors follows
+    the well known pattern from dual quaternion skinning : 
+    </p>
+    
+    <PRE><CODE CLASS="language-glsl">// Grab the 4 bone motors.
+motor b1 = motors[int(attrib_joints.x)];
+motor b2 = motors[int(attrib_joints.y)];
+motor b3 = motors[int(attrib_joints.z)];
+motor b4 = motors[int(attrib_joints.w)];
+
+// Blend them together, always use short path.
+motor r = attrib_weights.x * b1;
+if (dot(r[0],b2[0])<=0.0) b2 = -b2;
+r += attrib_weights.y * b2;
+if (dot(r[0],b3[0])<=0.0) b3 = -b3;
+r += attrib_weights.z * b3;
+if (dot(r[0],b4[0])<=0.0) b4 = -b4;
+r += attrib_weights.w * b4;
+    
+// Now renormalize and combine with object to world
+toWorld = gp(toWorld, normalize_m(r));
+</CODE></PRE>
+     
+    <p>
+    Note how just as for dual quaternions, we make sure that any transformation that is blended in follows
+    the short path, and renormalize the resulting transformation.
+    </p>
+    
+    <H3>Animation Blending</H3>
+    <p>
+    For animation blending, the same technique is used, directly blending and renormalizing PGA motors on the CPU.
+    </p>
+    <CENTER>
+    <DIV STYLE="display:flex">
+      <DIV STYLE="display:inline-block; height:280px; text-align:center">
+        <SPAN title="model by dogzerx@hotmail.com" style="display:block; width:200px; height:250px;" id="elephant7" data-anima=2 data-animb=2></SPAN>
+        <SELECT ID="anim1" ONCHANGE="elephant7.dataset.anima = elephant7.dataset.animb = this.selectedIndex">
+          <OPTION>Idle
+          <OPTION>Idle2
+          <OPTION SELECTED>Failure
+          <OPTION>Success
+          <OPTION>Talk
+          <OPTION>Walk
+        </SELECT>
+      </DIV>
+      <DIV STYLE="display:inline-block; height:280px; text-align:center; flex-grow:1">
+        <SPAN title="model by dogzerx@hotmail.com" style="display:block; height:250px;" id="elephant4"></SPAN>
+        <INPUT ID="blend" TYPE="range" MIN="0" MAX="1" STEP="0.001" VALUE="0"></INPUT>
+      </DIV>
+      <DIV STYLE="display:inline-block; height:280px; text-align:center">
+        <SPAN title="model by dogzerx@hotmail.com" style="display:block; width:200px; height:250px;" id="elephant6" data-anima=3 data-animb=3></SPAN>
+        <SELECT ID="anim2" ONCHANGE="elephant6.dataset.anima = elephant6.dataset.animb = this.selectedIndex">
+          <OPTION>Idle
+          <OPTION>Idle2
+          <OPTION>Failure
+          <OPTION SELECTED>Success
+          <OPTION>Talk
+          <OPTION>Walk
+        </SELECT><BR><BR>
+      </DIV>
+    </DIV>
+    </CENTER>
+    
+    
+    
+    <H2>Conclusion</H2>
+    
+    <p>
+    This project started off with the goal to demonstrate it is indeed possible to implement a forward renderer using
+    PGA exclusively. What we found is that, not only is this possible, the common understanding that this would come
+    at the cost of more expensive transformations turns out to be much more subtle. The resulting improvements are
+    both unexpected and quite spectacular, especially on the memory footprint where an extra 33% vertices in the
+    same storage is quite a significant improvement. This technique can readily be deployed into other existing 3D
+    engines, at virtually no cost on the vertex shader and without modifications to the rest of the pipeline.
+    </p>
+    
+    <H2>References</H2>
+    <OL STYLE="text-align:left">
+<LI> Geometric Algebra and Computer Graphics. Charles Gunn & Steven De Keninck. <A HREF="https://dl.acm.org/doi/10.1145/3305366.3328099">https://dl.acm.org/doi/10.1145/3305366.3328099</A>
+<LI> n-Dimensional Rigid Body Mechanics. Marc Ten Bosch. SIGGRAPH2020. <A HREF="https://marctenbosch.com/ndphysics/NDrigidbody.pdf">https://marctenbosch.com/ndphysics/NDrigidbody.pdf</A>
+<LI> Geometric Clifford Algebra Networks. David Ruhe & co. <A HREF="https://doi.org/10.48550/arXiv.2302.06594">https://doi.org/10.48550/arXiv.2302.06594</A>
+<LI> Geometric Algebra Transformers. Johann Brehmer & co. <A HREF="https://arxiv.org/pdf/2305.18415.pdf">https://arxiv.org/pdf/2305.18415.pdf</A>
+<LI> Plane-based Geometric Algebra for Computer Science. Leo Dorst & Steven De Keninck. <A HREF="https://bivector.net/PGA4CS.html">https://bivector.net/PGA4CS.html</A>
+<LI> May the Forque be with you. Leo Dorst & Steven De Keninck. <A HREF="https://bivector.net/PGADYN.html">https://bivector.net/PGADYN.html</A>
+<LI> Normalization, square roots, and the exponential and logarithmic maps in geometric algebras of less than 6D. Steven De Keninck & Martin Roelfs. <A HREF="http://dx.doi.org/10.1002/mma.8639">http://dx.doi.org/10.1002/mma.8639</A>
+    </OL>
+
+  </DIV>
+  
+  <!-- SCRIPT -->
+  <script type="module" src="src/LookMaNoMatrices.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
