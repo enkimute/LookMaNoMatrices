@@ -453,15 +453,19 @@ motor exp_b( line B ) {
     
     <H3>Escaping the matrix</H3>
     
+    <p>
     The prevalence of matrices in computer graphics means that interacting with existing content inevitably will
     confront you with matrices. The Khronos glTF project from which we have started uses matrices throughout, for
     transformations, binding poses for skinning etc. Our commitment to a matrix-free environment implies we will
     have to convert these matrices to their PGA equivalents at load time.
+    </p>
     
     <H4>Converting matrices to motors.</H4>
     
+    <p>
     To convert a 4x4 orthogonal matrix to a motor, we happily employ the isomorphism to quaternions and upgrade
     an industry standard solution to handle the entire PGA manifold. 
+    </p>
     
     <PRE><CODE CLASS="language-javascript">export const fromMatrix3 = M => {
   // Shorthand.
@@ -492,8 +496,10 @@ motor exp_b( line B ) {
   return gp_mm( [1,0,0,0,-0.5*m30,-0.5*m31,-0.5*m32,0], fromMatrix3([m00,m01,m02,m10,m11,m12,m20,m21,m22]) );
 }
 </CODE></PRE>
-
+    
+    <p>
     These conversions are run on all of the matrices in our imports, at load time. 
+    </p>
     
     <H4>Handling uniform scaling.</H4>
     
