@@ -52,7 +52,7 @@ const files  = els.map(x=>x.dataset.scene).filter((x,i,a)=>a.indexOf(x)==i).sort
 els.forEach( el => el.sceneID = files.indexOf( el.dataset.scene ));
 
 // Load a glTF file and upload to webGL.
-const glTF  = await Promise.all(files.map( file => render.load(file) ));
+const glTF  = await Promise.all(files.map( (file,i) => render.load(file,i) ));
 
 /******************************************************************************
  * Our Frame Handler.

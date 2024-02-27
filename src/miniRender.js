@@ -76,8 +76,8 @@ export class miniRender {
   * @param {string} uri URI of glTF/glb file to load.
   * @returns {object} reference to this scene.
   ****************************************************************************/
-  async load ( uri ) {
-    this.glTF.push(await new miniGLTF().load( uri, { progress:x=>{ document.getElementById('file').value = 100*x.value;}})
+  async load ( uri, slot=0 ) {
+    this.glTF[slot] = (await new miniGLTF().load( uri, { progress:x=>{ document.getElementById('file').value = 100*x.value;}})
     .then(glTF=>{
        miniGL.resetProgramCache();
        document.getElementById('file').style.display = 'none';
@@ -138,7 +138,7 @@ export class miniRender {
        
        return glTF;
     }));
-    return this.glTF[this.glTF.length-1];
+    return this.glTF[slot];
   }
   
  /*****************************************************************************
