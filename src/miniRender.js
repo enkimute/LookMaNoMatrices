@@ -66,6 +66,8 @@ export class miniRender {
     this.exposure   = 1.0;
     this.camera     = exp_b(mul(e03,-1))
     
+    this.glTF = [];
+    
     return this;
   }
   
@@ -75,7 +77,7 @@ export class miniRender {
   * @returns {object} reference to this scene.
   ****************************************************************************/
   async load ( uri ) {
-    this.glTF = await new miniGLTF().load( uri, { progress:x=>{ document.getElementById('file').value = 100*x.value;}})
+    this.glTF.push(await new miniGLTF().load( uri, { progress:x=>{ document.getElementById('file').value = 100*x.value;}})
     .then(glTF=>{
        miniGL.resetProgramCache();
        document.getElementById('file').style.display = 'none';
@@ -134,18 +136,10 @@ export class miniRender {
        }
        console.timeEnd('loading textures.');
        
-       this.glTF = glTF;
        return glTF;
-    });
-    return this.glTF;
+    }));
+    return this.glTF[this.glTF.length-1];
   }
-  
- /*****************************************************************************
-  *
-  ****************************************************************************/
-  setTime ( t1, a1, t2, a2, blend ) {
-    this.glTF.setTime( t1, a1, t2, a2, blend );
-  }  
   
  /*****************************************************************************
   * Check viewport size/place, and clear it. 
@@ -174,11 +168,11 @@ export class miniRender {
  /*****************************************************************************
   * Render the scene.
   ****************************************************************************/
-  render (world) {
+  render (world, scene=0) {
     if (!this.glTF) return;
     const gl     = this.gl;
     const canvas = this.canvas;
-    const glTF   = this.glTF;
+    const glTF   = this.glTF[scene];
     
     // Render a single node.
     const renderNode = (gl, node, transform, params, trans=0, parentChanged = false) => {

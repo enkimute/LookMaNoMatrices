@@ -60,7 +60,7 @@
     <big>Putting PGA ($\mathbb R_{3,0,1}$) to the test!</big>
     </CENTER><BR><BR>
 
-    <SPAN title="model by dogzerx@hotmail.com" style="float:left; display:inline-block; width:180px; height:270px;" id="elephant1" data-animA="0" data-animB="4"></SPAN>
+    <SPAN title="model by dogzerx@hotmail.com" style="float:left; display:inline-block; width:180px; height:270px;" class="glTF" data-scene="data/elephant.glb" data-animA="0" data-animB="4"></SPAN>
 
     <p>Since the 2019 SIGGRAPH course [1], Geometric Algebra, and Euclidean PGA in particular, 
        has been gaining traction within the computer graphics and machine learning communities 
@@ -214,6 +214,7 @@ motor gp_rr( motor a, motor b ) {
     and general motor. 
     
     <CENTER>
+    <SPAN title="model by dogzerx@hotmail.com" style="display:inline-block; width:140px; height:200px;" class="glTF" data-scene="data/cow.glb" data-animA="0" data-animB="1"></SPAN>
     <DIV STYLE="display:inline-block;"><TABLE STYLE="max-width:600px;">
     <TR><TH>Operation<TH>Multiplications<TH>Additions
     <TR><TD>gp_mm<TD>48<TD>40
@@ -223,7 +224,7 @@ motor gp_rr( motor a, motor b ) {
     <TR><TD>gp_rm / gp_mr<TD>32<TD>24
     <TR><TD>gp_tm / gp_mt<TD>12<TD>12
     </TABLE></DIV>
-    <SPAN title="model by dogzerx@hotmail.com" style="display:inline-block; width:140px; height:200px;" id="elephant2"  data-animA="0" data-animB="1"></SPAN>
+    <SPAN title="model by dogzerx@hotmail.com" style="display:inline-block; width:140px; height:200px;" class="glTF" data-scene="data/elephant.glb" data-animA="0" data-animB="1"></SPAN>
     </CENTER>
     
     <H4>Transforming points</H4>
@@ -523,7 +524,7 @@ motor exp_b( line B ) {
     these transformations to the vertices, normals and tangents that make up our mesh, and as we've seen, the
     computational complexity involved appears to make our motors a disadvantage.
     </p>
-    <SPAN title="model by dogzerx@hotmail.com" style="float:right; display:inline-block; width:140px; height:150px;" id="elephant3" data-animA="0" data-animB="2"></SPAN>
+    <SPAN title="model by dogzerx@hotmail.com" style="float:right; display:inline-block; width:140px; height:150px;" class="glTF"  data-scene="data/elephant.glb" data-animA="0" data-animB="2"></SPAN>
     <p>
     As we will soon discover, the situation is more subtle, and at this point we push through, replacing the 
     model and view matrices with motors, and using the above defined sandwich products to transform the incoming
@@ -599,7 +600,8 @@ void extractNormalTangent( motor a, out direction normal, out direction tangent 
     and (12 + 8 + 18 = 38) additions. That is nearly identical to the 48 multiplications and 36 additions that would
     be required if we use 4x4 matrices and normal and tangent vectors instead. 
     </p>
-    <center><SPAN title="model by dogzerx@hotmail.com" style="display:inline-block; width:200px; height:250px;" id="elephant5"  data-animA="4" data-animB="3"></SPAN></center>
+    <center><SPAN title="model by dogzerx@hotmail.com" style="display:inline-block; width:200px; height:250px;" class="glTF" data-scene="data/cow.glb" data-animA="2" data-animB="2"></SPAN>
+            <SPAN title="model by dogzerx@hotmail.com" style="display:inline-block; width:200px; height:250px;" class="glTF" data-scene="data/elephant.glb" data-animA="3" data-animB="3"></SPAN></center>
     
     <center><b>PGA motors can be just as fast as 4x4 matrices to transform your mesh vertices !!!</b></center>
     
@@ -665,8 +667,8 @@ toWorld = gp(toWorld, normalize_m(r));
     <CENTER>
     <DIV STYLE="display:flex">
       <DIV STYLE="display:inline-block; height:280px; text-align:center">
-        <SPAN title="model by dogzerx@hotmail.com" style="display:block; width:200px; height:250px;" id="elephant7" data-anima=2 data-animb=2></SPAN>
-        <SELECT ID="anim1" ONCHANGE="elephant7.dataset.anima = elephant7.dataset.animb = this.selectedIndex">
+        <SPAN title="model by dogzerx@hotmail.com" style="display:block; width:200px; height:250px;" class="glTF" id="e1" data-scene="data/elephant.glb" data-anima=2 data-animb=2></SPAN>
+        <SELECT ID="anim1" ONCHANGE="e1.dataset.anima = e1.dataset.animb = this.selectedIndex">
           <OPTION>Idle
           <OPTION>Idle2
           <OPTION SELECTED>Failure
@@ -676,12 +678,12 @@ toWorld = gp(toWorld, normalize_m(r));
         </SELECT>
       </DIV>
       <DIV STYLE="display:inline-block; height:280px; text-align:center; flex-grow:1">
-        <SPAN title="model by dogzerx@hotmail.com" style="display:block; height:250px;" id="elephant4"></SPAN>
-        <INPUT ID="blend" TYPE="range" MIN="0" MAX="1" STEP="0.001" VALUE="0"></INPUT>
+        <SPAN title="model by dogzerx@hotmail.com" style="display:block; height:250px;" class="glTF" id="e2" data-scene="data/elephant.glb" data-blend="0"></SPAN>
+        <INPUT ID="blend" TYPE="range" MIN="0" MAX="1" STEP="0.001" VALUE="0" ONINPUT="e2.dataset.blend = this.value*1"></INPUT>
       </DIV>
       <DIV STYLE="display:inline-block; height:280px; text-align:center">
-        <SPAN title="model by dogzerx@hotmail.com" style="display:block; width:200px; height:250px;" id="elephant6" data-anima=3 data-animb=3></SPAN>
-        <SELECT ID="anim2" ONCHANGE="elephant6.dataset.anima = elephant6.dataset.animb = this.selectedIndex">
+        <SPAN title="model by dogzerx@hotmail.com" style="display:block; width:200px; height:250px;" class="glTF" id="e3" data-scene="data/elephant.glb" data-anima=3 data-animb=3></SPAN>
+        <SELECT ID="anim2" ONCHANGE="e3.dataset.anima = e3.dataset.animb = this.selectedIndex">
           <OPTION>Idle
           <OPTION>Idle2
           <OPTION>Failure
