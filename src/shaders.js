@@ -177,78 +177,68 @@ export const fragmentShader = (material, mesh)=>`
   layout (location=0) out vec4 outColor;
 
   void main() {
-    // Renormalize interpolated normal
-    vec3 normal = normalize(worldNormal);
-      
-    // Sample and mix material properties
-    vec2 uv = vec2(1., 1.) ;
+
+    // Sample the color and alpha.
     vec4 color, sgao;
-    
     color = ${material?.pbrMetallicRoughness?.baseColorFactor?`vec4(${material.pbrMetallicRoughness?.baseColorFactor.map(x=>x.toFixed(3))}) *`:'vec4(1.0) *'}
-            ${material?.pbrMetallicRoughness?.baseColorTexture || material?.extensions?.KHR_materials_pbrSpecularGlossiness?.diffuseTexture ?'texture(colorTexture, vec2(st * uv)).rgba':'1.0'};  // sRGB!
+            ${material?.pbrMetallicRoughness?.baseColorTexture || material?.extensions?.KHR_materials_pbrSpecularGlossiness?.diffuseTexture ?'texture(colorTexture, vec2(st)).rgba':'1.0'};
                 
-    // Alpha Test
-    ${(material?.alphaMode == 'MASK')?`
-      if (color.a < ${material?.alphaCutoff?.toFixed(3)||'0.5'}) discard;
-    `:''}
-    ${(material?.alphaMode == 'BLEND')?`
-        if (color.a < 5./255.) discard;
-    `:''}
+    // Implement alpha Test
+    ${(material?.alphaMode == 'MASK')?`  if (color.a < ${material?.alphaCutoff?.toFixed(3)||'0.5'}) discard; `:''}
+    ${(material?.alphaMode == 'BLEND')?` if (color.a < 5./255.) discard; `:''}
 
-    // Spec, Gloss, AO.
-    sgao = ${material?.pbrMetallicRoughness?.metallicRoughnessTexture?'texture(specularTexture, vec2(st  * uv)).bgra;':`vec4(1.0,${material?.pbrMetallicRoughness?.roughnessFactor?.toFixed(3)??'1.0'}, 1.0, 1.0).bgra;`}
-    vec3 emissive = ${(material?.emissiveTexture !== undefined)?'texture(emissiveTexture, vec2(st  * uv)).rgb;':(material?.emissiveFactor !== undefined)?`vec3(${material.emissiveFactor.map(x=>(x*(material?.extensions?.KHR_materials_emissive_strength?.emissiveStrength??1)).toFixed(3))});`:'vec3(0.0);'}
+    // Sample sgao : metalness, roughness, ao.
+    sgao = ${material?.pbrMetallicRoughness?.metallicRoughnessTexture?'texture(specularTexture, vec2(st)).bgra;':`vec4(1.0,${material?.pbrMetallicRoughness?.roughnessFactor?.toFixed(3)??'1.0'}, 1.0, 1.0).bgra;`}
+    
+    // Sample the emissive map. 
+    vec3 emissive = ${(material?.emissiveTexture !== undefined)?'texture(emissiveTexture, vec2(st)).rgb;':(material?.emissiveFactor !== undefined)?`vec3(${material.emissiveFactor.map(x=>(x*(material?.extensions?.KHR_materials_emissive_strength?.emissiveStrength??1)).toFixed(3))});`:'vec3(0.0);'}
 
-
+    // If we're unlit, we are done.
     ${material?.extensions?.KHR_materials_unlit?'outColor = vec4( pow(exposure*(color.rgb + emissive.rgb), vec3(1./2.2)) , dot(vec3(0.299, 0.587, 0.114),emissive.rgb)); outColor2= vec4(vec3(0.),max(0., dot( vec3(0.30, 0.59, 0.11), outColor.rgb ) - 1.) / 2.0); return;':''}
 
+    // Process metalness
     ${(material?.pbrMetallicRoughness?.metallicFactor!==undefined)?`sgao.r *= ${material?.pbrMetallicRoughness?.metallicFactor.toFixed(3)};`:``}
-
-    // convert roughness ..
-    sgao.g = clamp(sgao.g, 0., 1.);
     sgao.r = clamp(sgao.r, 0., 1.);
         
+    // Process roughness, squared and clamped.    
     sgao.g = sgao.g * sgao.g;
     sgao.g = max(sgao.g, 0.0002);
 
-    ${(material?.occlusionTexture !== undefined && material?.occlusionTexture !== material?.pbrMetallicRoughness)?'sgao.b = texture(oclusionTexture, vec2(st*uv)).r;':'sgao.b = 1.0;'}
+    // Sample ambient occlusion if seperate.
+    ${(material?.occlusionTexture !== undefined && material?.occlusionTexture !== material?.pbrMetallicRoughness)?'sgao.b = texture(oclusionTexture, vec2(st)).r;':'sgao.b = 1.0;'}
         
-    // Sample normalmap..
-    vec2 nuv = vec2(st * uv * vec2(${(material?.normalTexture?.extensions?.KHR_texture_transform?.scale??[1,1]).map(x=>x.toFixed(3))}));
-    vec3 normalTex = normalize(texture(normalTexture, nuv).rgb  * 2.0 - 1.0);
+    // Sample the normalmap and apply handedness.
+    vec3 normalTex = normalize(texture(normalTexture, st).rgb  * 2.0 - 1.0);
     normalTex.y *= worldTangent.w;
  
     // Build tangent frame.       
-    vec3 tg = normalize(worldTangent.xyz);
-    tg = normalize( tg - normal * dot(tg, normal) );
-    mat3 tgw = mat3( tg, normalize(cross(normal, tg)), normal );
-    ${(material?.normalTexture !== undefined) ? 'normal = normalize(tgw * normalTex);':''}
+    vec3 normal = normalize(worldNormal);                                                      // renormalize normal
+    vec3 tg = normalize(worldTangent.xyz);                                                     // renormalize tangent
+    tg = normalize( tg - normal * dot(tg, normal) );                                           // orthogonalize tangent
+    mat3 tgw = mat3( tg, normalize(cross(normal, tg)), normal );                               // construct TBN matrix
+    ${(material?.normalTexture !== undefined) ? 'normal = normalize(tgw * normalTex);':''}     // sample normalmap.
 
+    // Front facing flag.
     if (gl_FrontFacing == false) normal *= -1.;
         
-    // Do all lights.
+    // Just a single fixed point light.
     vec3 V = normalize(cameraPos - worldPosition);
- 
-    // light1 - main light, always used.
+
+    // Calculate light attenuation.
     float range = 36.;
     float dist  = length(worldPosition - lightPos); 
     float att   = clamp(1. - (dist*dist)/(range*range), 0., 1.); att *= att;
+
+    // Light contribution.
     vec3 ldir = normalize(lightPos - worldPosition);
     vec3 light1 = 1.2 * att * sgao.b * brdf(normal, V, ldir, color.rgb, sgao.rgb);
 
-    ldir =  normalize(vec3(-lightPos.xy, lightPos.z) - worldPosition);
-    dist  = length(worldPosition - vec3(-lightPos.xy, lightPos.z)); 
-    att   = clamp(1. - (dist*dist)/(range*range), 0., 1.); att *= att;
-    vec3 light2 =1.0 * att * vec3(1.0,1.,1.) * sgao.b * brdf(normal, V, ldir, color.rgb, sgao.rgb);
-        
-    // test ibl
-    if (color.a > 0.05) {
-      light1 +=  /*sgao.b **/ getIBLRadianceGGX(normal, V, pow(sgao.g,.5), mix(vec3(0.04), color.rgb, sgao.r), worldPosition);
-      light1 +=  sgao.b * getIBLRadianceLambertian( normal, V, pow(sgao.g,.5), mix(color.rgb, vec3(0.), sgao.r), mix(vec3(0.04), color.rgb, sgao.r));
-    }
+    // IBL lighting contribution.
+    vec3 ibl = getIBLRadianceGGX(normal, V, pow(sgao.g,.5), mix(vec3(0.04), color.rgb, sgao.r), worldPosition);
+    ibl += sgao.b * getIBLRadianceLambertian( normal, V, pow(sgao.g,.5), mix(color.rgb, vec3(0.), sgao.r), mix(vec3(0.04), color.rgb, sgao.r));
 
     // Accumulate and gamma correct
-    outColor = vec4( exposure * (light1 + light2/*+ light2 + light3 */ + emissive), color.a);
+    outColor = vec4( exposure * (light1 + ibl + emissive), color.a);
     outColor.rgb = pow(outColor.rgb,vec3(1./2.2));
   }`;
  
