@@ -11,6 +11,7 @@ Features :
 * GGX IBL + DL.
 * glTF/glb with animations.
 * PGA motor skinning (isomorphic to dual quaternions).
+* Animation blending with motors.
 * 25% Smaller Vertex Descriptor!
 * Tangent Space normalmapping using rotors.
 * no matrices!
