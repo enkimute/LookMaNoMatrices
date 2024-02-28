@@ -579,19 +579,39 @@ motor exp_b( line B ) {
     <p>
     As we will soon discover, the situation is more subtle, and at this point we push through, replacing the 
     model and view matrices with motors, and using the above defined sandwich products to transform the incoming
-    vertex attributes
+    vertex attributes. 
     </p>
     
     <PRE><CODE class="language-glsl">vec3 worldPosition = sw_mp( toWorld, attrib_position );
 vec3 worldNormal   = sw_md( toWorld, attrib_normal );      
 vec4 worldTangent  = vec4(sw_md( toWorld, attrib_tangent.xyz ), attrib_tangent.w);</CODE></PRE>
+
+    <p>
+    For the projection matrix, the situation is different. The typical 4x4 projection matrix has only 5 non-zero
+    entries, and even without PGA it is much more performant to simply write out the resulting expression. The
+    same simply holds here and we use a standard projection function for this.
+    </p>
+
+    <PRE><CODE class="language-glsl">vec4 project( const float n, const float f, const float minfov, float aspect, vec3 inpos ){
+  float cthf = cos(minfov/2.0) / sin(minfov/2.0);              // cotangent of half the minimal fov.
+  float fa = 2.*f*n/(n-f), fb = (n+f)/(n-f);                   // all of these can be precomputed constants.
+  vec2 fit = cthf * vec2(-1.0/aspect, 1.0);                    // fit vertical.
+  return vec4( inpos.xy * fit, fa - fb*inpos.z, inpos.z );
+}</CODE></PRE>
+
+    <p>
+    With our basic transformations all setup, let us turn our attention to one of todays most common shading
+    techniques, tangent space normal mapping.
+    </p>    
     
     <H3>Tangent Space Normalmapping.</H3>
+    
+    <H4>Vertex Shader</H4>
     
     <p>
     For a tangent space normal-mapped mesh, the vertex shader needs to transform the position, the normal, and
     the tangent vector. So it seems unavoidable that our choice for PGA means we are incurring the higher
-    transformation cost threefold. However, the normal and tangent and bitangent vector together form an
+    transformation cost threefold. However, the normal, tangent and bitangent vector together form an
     orthonormal frame. In PGA, any orthonormal frame is related to the canonical basis frame through a $k$-reflection.
     When $k$ is even, these are just the rotation-only motors we encountered before (isomorphic to the quaternions), and
     when $k$ is odd, this k-reflection instead represents a similar rotation followed by one extra reflection.
@@ -678,6 +698,36 @@ motor tangentRotor = gp_rr( toWorld, motor(attrib_tangentRotor,vec4(0.)) );
 // Next, extract world normal and tangent from the tangentFrame rotor.
 extractNormalTangent(tangentRotor, worldNormal, worldTangent.xyz);
 worldTangent.w = sign(1.0 / attrib_tangentRotor.x); // trick to disambiguate negative zero!</CODE></PRE>
+    <p>
+    At this point, no changes to the fragment shader are required, making this a drop-in replacement
+    that can be used in any existing engine.  
+    </p>
+    
+    <H4>Fragment Shader</H4>
+    
+    <p>
+    If we want to be able to load existing content, this is the point where we have to resort back to the
+    TBN matrix. The reason for this is clear. When baking the high detail mesh onto the low detail mesh,
+    the baking tool has interpolated vertex normal and tangent vectors over the face of each triangle. From
+    these (no longer normalized or orthogonal) vectors, at each fragment, an orthogonal TBN matrix is
+    constructed, and used to transform the high detail world space normal to the tangent space normal that
+    is stored in the texture.
+    </p>
+    
+    <p>
+    This process of interpolating basis vectors introduces an error that is typical for matrices, and
+    unfortunately this error is thus literally baked into the textures. This is why we opted to indeed
+    extract the normal and tangent vectors explicitely from the tangentRotor.  
+    </p>
+    
+    <p>
+    However, for scenarios where one controls the baking tool, we can do better still. In these cases we
+    could just pass the tangentRotor unmodified to the fragmentShader, where it can be normalized and
+    used to transform the sampled normal, without ever constructing a tbn matrix. In this scenario, we
+    would save even more, removing the need to extract normal and tangent in the vertex shader, requiring
+    one less varying parameter, and removing the need for expensive orthogonalisation in the fragment
+    shader.
+    </p>
 
     <H3>Motor Skinning.</H3>
     
