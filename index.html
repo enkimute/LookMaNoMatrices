@@ -60,7 +60,8 @@
         <A TARGET="BLANK" HREF="https://github.com/enkimute/LookMaNoMatrices">https://github.com/enkimute/LookMaNoMatrices</A><BR>
         A forward renderer without matrices.
       </div>
-      <B>Steven De Keninck</B><BR><BR>
+      <B>Steven De Keninck</B><BR>
+      <B>Computer Vision Group &bullet; University of Amsterdam</B><BR><BR><BR>
       <big>Putting PGA ($\mathbb R_{3,0,1}$) to the test!</big>
     </CENTER>
     <BR><BR>
@@ -100,7 +101,7 @@
     Matrices are everywhere in computer graphics. In fact, there was a time when 4x4 matrices were
     both baked into the GPU and a mandatory part of all graphics API's. This project would then
     simply not have been possible. Today however, pushed in no small part by the advancements in AI,
-    GPU's are highly programmable scalar processors, no longer tied into the long gone fixed function
+    GPUs are highly programmable scalar processors, no longer tied into the long gone fixed function
     pipeline. Yet, 4x4 matrices are still omnipresent. And why should they not be? They can represent
     all linear transformations, and the typical forward graphics pipeline indeed involves both
     rigid and projective transformations. Seems like a good fit.
@@ -157,7 +158,7 @@
     while the special degenerate $\mathbf e_0$ vector represents the plane at infinity. These four generators
     are then combined to form six bivectors, four trivectors and a single quadvector that together with
     the scalar represent all of the PGA elements. Our specific choice for basis and memory layout was 
-    selected to minimize convertions when handling typical graphics data. All of the elements of PGA are 
+    selected to minimize conversions when handling typical graphics data. All of the elements of PGA are 
     intricately connected, an overview of our choices and how they map to transformations and geometric 
     elements is in the following table (where the second row denotes the square of each element) :
     </p>

@@ -79,7 +79,9 @@ export class miniRender {
   async load ( uri, slot=0 ) {
     this.glTF[slot] = (await new miniGLTF().load( uri, { progress:x=>{ document.getElementById('file').value = 100*x.value;}})
     .then(glTF=>{
+       // Don't cache programs from the previous model.
        miniGL.resetProgramCache();
+       
        document.getElementById('file').style.display = 'none';
        const gl = this.gl;
        
