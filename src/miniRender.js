@@ -151,15 +151,19 @@ export class miniRender {
     
     // We allow our canvas to move during smooth scroll, so at every
     // new frame, we position it center view again.
-    canvas.style.top  = window.scrollY + 'px';
-    //canvas.style.left = window.scrollX + 'px'; 
+    canvas.style.top  = (visualViewport.pageTop??window.scrollY) + 'px';
  
     // Setup size.
     var dpr = window.devicePixelRatio||1;
-    if (canvas.clientWidth * dpr != canvas.width || canvas.clientHeight * dpr != canvas.height) {
-      canvas.width  = canvas.clientWidth * dpr;
-      canvas.height = canvas.clientHeight * dpr;
+    const width = window.visualViewport?.width??canvas.clientWidth;
+    const height = window.visualViewport?.height??canvas.clientHeight;
+    if (width * dpr != canvas.width || height * dpr != canvas.height) {
+      canvas.width  = width * dpr;
+      canvas.height = height * dpr;
     }
+
+    // Force the height also. (fixes issue with auto-hide address on phones)
+    canvas.style.height = height + 'px';
 
     // Now start the render.
     gl.viewport(0,0,canvas.width,canvas.height);

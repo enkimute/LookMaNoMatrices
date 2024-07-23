@@ -70,19 +70,32 @@ const frame = ()=>{
   // and render in those places. This allows us to integrate neatly
   // into the page, and break outside of our 'box', without needing
   // multiple canvases or contexts.     
+  canvas.style.opacity = 0;
   els.forEach( model => {  
 
     // Figure out if it is on the screen.
     var rect   = model.getBoundingClientRect();
-    var aspect = canvas.width/canvas.height;
+    var aspect = canvas.clientWidth/canvas.clientHeight;
     var height = canvas.clientHeight;
-    var center = [(rect.left + 0.5*(rect.right - rect.left))/window.innerWidth, (rect.bottom + 0.5*(rect.top - rect.bottom))/height];
+    
+    // Establish zoom - not included in gBCR, and collect transparency.
+    var zoom = 1, opacity = 1;
+    var parent = model;
+    while (parent) { zoom *= parent.style.zoom||1; opacity *= getComputedStyle(parent).opacity; parent = parent.parentElement; }
+
+    // Figure out the center position and map it to viewport ratios.
+    var center = [(rect.left + 0.5*(rect.right - rect.left))/canvas.clientWidth * zoom, (rect.bottom + 0.5*(rect.top - rect.bottom))/height * zoom];
     center = add(mul(sub(center,0.5),0.48),0.5);
-    if (rect.bottom<0 || rect.top>window.innerHeight) return;
+    if (rect.bottom<0 || rect.top * zoom>window.innerHeight) return;
 
     // If we are visible, set our scale and calculate our final transform.
     render.worldscale = (rect.bottom - rect.top) / height * 0.5;
+    render.worldscale *= zoom;
     var world2 = gp(world, exp_t( -(center[0]-0.5) / render.worldscale * aspect - 0.05 , e01 ), exp_t( (center[1]-0.5) / render.worldscale, e02 ), exp_r( 0.2, e31));
+    
+    // Inherit transparency. (for reveal.js).
+    if (opacity==0) return;
+    canvas.style.opacity = opacity; 
 
     // Grab correct scene.
     const TF = glTF[model.sceneID ?? 0];
@@ -91,8 +104,8 @@ const frame = ()=>{
     TF.json.scenes[0].nodes[0].changed = true;
     
     // Now setup the proper animation. Either what the html tag has, or what's selected in the dropdown.
-    var a1 = model.dataset.anima ?? document.querySelector('#anim1')?.selectedIndex ?? 0;
-    var a2 = model.dataset.animb ?? document.querySelector('#anim2')?.selectedIndex ?? a1;
+    var a1 = model.dataset.anima ?? 0;
+    var a2 = model.dataset.animb ?? a1;
     
     // Figure out if we need manual blending or just slowly back and forth.
     var bl = model.dataset.blend ?? Math.sin(performance.now()/800 - Math.PI/2)*0.5+0.5;

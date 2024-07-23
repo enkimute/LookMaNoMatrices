@@ -25,7 +25,8 @@
 
   <!-- Minimal local styling -->
   <style>
-    body       { font-family: "Pathway Extreme", Arial, sans-serif; text-align:justify; counter-reset: section; background : linear-gradient(0deg, rgb(0 0 0) ,rgb(66 22 0) ) fixed;}
+    html       { background : linear-gradient(0deg, rgb(0 0 0) ,rgb(66 22 0) ) fixed; }
+    body       { font-family: "Pathway Extreme", Arial, sans-serif; text-align:justify; counter-reset: section; }
     b          { color : white }
     #render    { position:absolute; width:100%; height:100%; top:0; left:0; pointer-events:none; z-index:100; }
     .main      { color:#BBB; position:relative; margin:auto; max-width: min(100%, 1024px); overflow:hidden }
@@ -71,7 +72,7 @@
     <SPAN 
       class="glTF" 
       title="model by dogzerx@hotmail.com" 
-      style="float:left; display:inline-block; width:180px; height:270px;" 
+      style="float:left; display:block; width:180px; height:270px;" 
       data-scene="data/elephant.glb" 
       data-animA="0" 
       data-animB="4"
@@ -629,7 +630,7 @@ motor exp_b( line B ) {
     <SPAN 
       class="glTF"  
       title="model by dogzerx@hotmail.com" 
-      style="float:right; display:inline-block; width:140px; height:150px;" 
+      style="float:right; display:block; width:140px; height:150px;" 
       data-scene="data/elephant.glb" 
       data-animA="0" 
       data-animB="2"
@@ -846,13 +847,13 @@ toWorld = gp(toWorld, normalize_m(r));
     </p>
 
     <CENTER>
-    <DIV STYLE="display:flex">
-      <DIV STYLE="display:inline-block; height:530px; text-align:center">
+    <DIV STYLE="display:flex; place-content: center; max-width:600px;">
+      <DIV STYLE="display:inline-block; height:530px; text-align:center; flex-grow:1">
         <SPAN 
           class="glTF" 
           id="e4" 
           title="model by dogzerx@hotmail.com" 
-          style="display:block; width:200px; height:250px;" 
+          style="display:block; height:250px;" 
           data-scene="data/cow.glb" 
           data-anima=2 
           data-animb=2
@@ -861,12 +862,12 @@ toWorld = gp(toWorld, normalize_m(r));
           class="glTF" 
           id="e1" 
           title="model by dogzerx@hotmail.com" 
-          style="display:block; width:200px; height:250px;" 
+          style="display:block; height:250px;" 
           data-scene="data/elephant.glb" 
           data-anima=2 
           data-animb=2
         ></SPAN>
-        <SELECT ID="anim1" ONCHANGE="e1.dataset.anima = e1.dataset.animb = e4.dataset.anima = e4.dataset.animb = this.selectedIndex">
+        <SELECT ID="anim1" ONCHANGE="e5.dataset.anima = e2.dataset.anima = e1.dataset.anima = e1.dataset.animb = e4.dataset.anima = e4.dataset.animb = this.selectedIndex">
           <OPTION>Idle
           <OPTION>Idle2
           <OPTION SELECTED>Failure
@@ -882,6 +883,8 @@ toWorld = gp(toWorld, normalize_m(r));
           title="model by dogzerx@hotmail.com" 
           style="display:block; height:250px;" 
           data-scene="data/cow.glb" 
+          data-anima=2 
+          data-animb=3
           data-blend="0"
         ></SPAN>
         <SPAN 
@@ -890,16 +893,18 @@ toWorld = gp(toWorld, normalize_m(r));
           title="model by dogzerx@hotmail.com" 
           style="display:block; height:250px;" 
           data-scene="data/elephant.glb" 
+          data-anima=2 
+          data-animb=3
           data-blend="0"
         ></SPAN>
         <INPUT ID="blend" TYPE="range" MIN="0" MAX="1" STEP="0.001" VALUE="0" ONINPUT="e2.dataset.blend = e5.dataset.blend = this.value*1;"></INPUT>
       </DIV>
-      <DIV STYLE="display:inline-block; height:530px; text-align:center">
+      <DIV STYLE="display:inline-block; height:530px; text-align:center; flex-grow:1">
         <SPAN 
           class="glTF" 
           id="e6" 
           title="model by dogzerx@hotmail.com" 
-          style="display:block; width:200px; height:250px;" 
+          style="display:block; height:250px;" 
           data-scene="data/cow.glb" 
           data-anima=3 
           data-animb=3
@@ -908,12 +913,12 @@ toWorld = gp(toWorld, normalize_m(r));
           class="glTF" 
           id="e3" 
           title="model by dogzerx@hotmail.com" 
-          style="display:block; width:200px; height:250px;" 
+          style="display:block; height:250px;" 
           data-scene="data/elephant.glb" 
           data-anima=3 
           data-animb=3
         ></SPAN>
-        <SELECT ID="anim2" ONCHANGE="e3.dataset.anima = e3.dataset.animb = e6.dataset.anima = e6.dataset.animb = this.selectedIndex">
+        <SELECT ID="anim2" ONCHANGE="e2.dataset.animb = e5.dataset.animb = e3.dataset.anima = e3.dataset.animb = e6.dataset.anima = e6.dataset.animb = this.selectedIndex">
           <OPTION>Idle
           <OPTION>Idle2
           <OPTION>Failure
