@@ -179,7 +179,7 @@
     <BR>
 
     <p>
-    These choices translate to the following simple shader structures, where we opted to stay within the builtin
+    These choices translate to the following simple shader structures, where we opted to stay within the built-in
     types to retain addition, subtraction and scalar multiplication. (glsl does not support operator overloading for custom types). 
     </p>
 
@@ -250,7 +250,7 @@ motor gp_rr( motor a, motor b ) {
 }</CODE></PRE>
     
     <p>
-    Our implementation provides these optimised versions for any combination of translation (_t), rotation around the origin (_r)
+    Our implementation provides these optimized versions for any combination of translation (_t), rotation around the origin (_r)
     and general motor (_m). 
     </p>
     
@@ -345,7 +345,7 @@ direction sw_mx( motor a ) {
     the fastest choice ... 
     </p>
     
-    <H4>Normalisation</H4>
+    <H4>Normalization</H4>
     
     <p>
     The squared (pseudo)norm of a PGA motor $M$ is given by 
@@ -373,10 +373,10 @@ motor normalize_m( motor a ) {
 }</CODE></PRE>
     
     <p> 
-    Note that this procedure should be compared not to vector normalisation, but instead to Gram-Schmidt orthogonalisation, as
+    Note that this procedure should be compared not to vector normalization, but instead to Gram-Schmidt orthogonalization, as
     the resulting motor is guaranteed to be an orthonormal transformation.
     
-    As before, when we are dealing with a pure translation or rotation, far more efficient versions of the normalisation
+    As before, when we are dealing with a pure translation or rotation, far more efficient versions of the normalization
     procedure are available.
     </p>
     
@@ -399,8 +399,8 @@ motor normalize_m( motor a ) {
     
     $$ \sqrt M = \overline{1 + M} $$
     
-    Here the overline denotes the Study-normalisation procedure from our previous block. Hence the computational cost of a
-    square root is exactly that of the normalisation procedure with one extra addition.
+    Here the overline denotes the Study-normalization procedure from our previous block. Hence the computational cost of a
+    square root is exactly that of the normalization procedure with one extra addition.
     </p>
     
     <PRE><CODE CLASS="language-glsl">// 21 mul, 6 add
@@ -436,7 +436,7 @@ motor exp_b( line B ) {
     
     <p>
     If there's one place where Geometric Algebra sets itself clearly apart from our standard vector and matrix
-    algebra aproach, it is the existense of inverses for (multi) vectors. Not only do these inverses exist,
+    algebra approach, it is the existence of inverses for (multi) vectors. Not only do these inverses exist,
     but for the normalized objects we are working with in our context, they are very efficient to calculate.
     </p>
     
@@ -466,7 +466,7 @@ motor exp_b( line B ) {
     <p>
     Where $\widetilde x$, the reversion operation, changes the sign of the bivector and trivector coefficients only.
     There is one more inverse that is occasionally needed, which is the inverse of a general bivector $B$.
-    Recall that a bivector $B$ only represents a single line iff $B \wedge B = 0$, the so called Plucker condition.
+    Recall that a bivector $B$ only represents a single line iff $B \wedge B = 0$, the so called Plücker condition.
     If a bivector $B$ does not satisfy that requirement, it is no blade, i.e. not the result of meeting two
     planes or joining two points. For such an element the inverse is slightly more complicated.
     </p>
@@ -480,33 +480,33 @@ motor exp_b( line B ) {
     Multiplying this last expression with $\widetilde B$ produces the inverse we are looking for.
     </p>
     
-    <H4>Motor Factorisation</H4>
+    <H4>Motor Factorization</H4>
     
     <p>
     Just as the process of factorizing matrices can be very insightful, so is the factorization of PGA 
-    motors. Two particular factorisations will be useful to us, and we will add them as the last tools
-    to our box. The first of those is called the <i>Euclidean Factorisation</i>, and it decomposes a motor
+    motors. Two particular factorizations will be useful to us, and we will add them as the last tools
+    to our box. The first of those is called the <i>Euclidean Factorization</i>, and it decomposes a motor
     into a rotation around the origin followed by a translation.
     $$ M = T_e R_e $$
-    This factorisation is particularly easy to calculate, as the Euclidean rotor $R_e$ is simply the Euclidean
+    This factorization is particularly easy to calculate, as the Euclidean rotor $R_e$ is simply the Euclidean
     part of our motor - the first four floats - isomorphic to a regular quaternion. If it is needed, the
     translation $T_e$ can be computed as $T_e = M \widetilde R_e$
     </p>
     
     <p>
-    The second factorisation of interest is the so called <I>Invariant factorisation</I>. It decomposes a
+    The second factorization of interest is the so called <I>Invariant factorization</I>. It decomposes a
     motor $M$ into a commuting translation and rotation, which is always possible and generally known in 3D
     as the Mozzi-Chasles theorem. You may have heard of it as every rigid body transformation can be
     decomposed into a rotation around a line preceded or followed by a translation along the same line.
     $$ M = TR = RT$$
-    In 3D PGA, the invariant factorisation is also easy to calculate, with the commuting translation given by
+    In 3D PGA, the invariant factorization is also easy to calculate, with the commuting translation given by
     $$ T = 1 + \cfrac {\langle M \rangle_4} {\langle M \rangle_2}$$
     Where the angle brackets denote the grade extraction, and the general bivector inverse from above comes 
     in handy. The matching rotation can now be constructed as $R = M\widetilde T = \widetilde TM$.
     </p>
     
     <p>
-    We will in particular use the Euclidean factorisation when composing the transformation of the tangent
+    We will in particular use the Euclidean factorization when composing the transformation of the tangent
     frame with that of the object to world motor, as such a frame is invariant to translations and the composition
     of rotations around the origin is more efficient.
     </p>
@@ -601,14 +601,14 @@ motor exp_b( line B ) {
     
     <p>
     Armed with our fully stocked PGA toolbox, we can now tackle the actual rendering task. Guided by the
-    reference implementation provided by Khronos, let us revisit those places where matrices are the defacto
+    reference implementation provided by Khronos, let us revisit those places where matrices are the de facto
     solution.
     </p>
     
     <p>
     The general idea of a forward renderer, is to transform all mesh geometry, and determining for each
     triangle which pixels it covers. This is to be contrasted with a ray tracing approach where one starts
-    from a ray throuh a pixel and determines which triangles it hits. In a typical forward rendering setup
+    from a ray through a pixel and determines which triangles it hits. In a typical forward rendering setup
     the transformation of the mesh from its specification in object space to its position on the screen is
     usually handled by a set of matrices called the model, view and projection matrices.
     </p>
@@ -684,14 +684,14 @@ vec4 worldTangent  = vec4(sw_md( toWorld, attrib_tangent.xyz ), attrib_tangent.w
     sense that both $R$ and $-R$ produce the same transformation. We can use this double covering to disambiguate
     even and odd k-reflections, simply by making sure the sign of the scalar coefficient of $R$ matches the
     classical handedness flag. Note that in doing so, we piggy-back on the IEE754 floating point specification,
-    that is we depend on the signed representation of zero. In the vertexshader we can then unambigously extract
+    that is we depend on the signed representation of zero. In the vertexshader we can then unambiguously extract
     the original sign using <PRE><CODE CLASS="language-glsl">float handedness = sign(1/tangentRotor.x)</CODE></PRE>
     </p>
     
     <p>
     Combining all this, we conclude that we can reduce our vertex descriptor for the most common tangent
     space normalmapping setup from 12 floats (3 position, 3 normal, 4 tangent, 2 uv) down to 9 (3 position,
-    4 tangentRotor, 2 uv). That is a substantial save, which is implemented at loadtime, converting loaded
+    4 tangentRotor, 2 uv). That is a substantial save, which is implemented at load-time, converting loaded
     normal and tangent vectors with:
     </p>
 
@@ -700,7 +700,7 @@ normal  = normalize( normal );
 tangent = normalize( sub(tangent, mul(normal, dot(normal,tangent) ) ) );
 // Calculate the bitangent.
 let bitangent = normalize(cross(normal, tangent));
-// Now setup the matrix explicitely.
+// Now setup the matrix explicitly.
 let mat = [...tangent, ...bitangent, ...normal];
 // Convert to motor and store.
 let motor = fromMatrix3( mat );
@@ -710,9 +710,9 @@ if (Math.sign(motor[0])!=tangents[i*4+3]) motor = motor.map(x=>-x);</CODE></PRE>
 
     <p>
     But there is more good news. Recall that using 4x4 matrices, the transformation of position, normal and
-    tangent includes 3 matrix vector products, totalling 48 multiplications and 36 additions. In the PGA
+    tangent includes 3 matrix vector products, totaling 48 multiplications and 36 additions. In the PGA
     version, we can however transform the entire tangent frame in one go, for a cost of just 16 multiplications
-    and 12 additions. After which we can in fact extract the worldspace normal and tangent directly with just
+    and 12 additions. After which we can in fact extract the world-space normal and tangent directly with just
     9 multiplications and 8 additions using :
     </p>
     
@@ -767,7 +767,7 @@ void extractNormalTangent( motor a, out direction normal, out direction tangent 
     The resulting code block in the vertexshader now becomes
     </p>
     
-    <PRE><CODE CLASS="language-glsl">// Now transform our vertex using the motor from object to worldspace.
+    <PRE><CODE CLASS="language-glsl">// Now transform our vertex using the motor from object to world-space.
 worldPosition = sw_mp(toWorld, attrib_position);
 
 // Concatenate the world motor and the tangent frame.
@@ -796,15 +796,15 @@ worldTangent.w = sign(1.0 / attrib_tangentRotor.x); // trick to disambiguate neg
     <p>
     This process of interpolating basis vectors introduces an error that is typical for matrices, and
     unfortunately this error is thus literally baked into the textures. This is why we opted to indeed
-    extract the normal and tangent vectors explicitely from the tangentRotor.  
+    extract the normal and tangent vectors explicitly from the tangentRotor.  
     </p>
     
     <p>
     However, for scenarios where one controls the baking tool, we can do better still. In these cases we
     could just pass the tangentRotor unmodified to the fragmentShader, where it can be normalized and
-    used to transform the sampled normal, without ever constructing a tbn matrix. In this scenario, we
+    used to transform the sampled normal, without ever constructing a TBN matrix. In this scenario, we
     would save even more, removing the need to extract normal and tangent in the vertex shader, requiring
-    one less varying parameter, and removing the need for expensive orthogonalisation in the fragment
+    one less varying parameter, and removing the need for expensive orthogonalization in the fragment
     shader.
     </p>
 
